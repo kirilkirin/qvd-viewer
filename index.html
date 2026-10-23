@@ -1,0 +1,1319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QVD Viewer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+[hidden]{display:none!important}
+body{margin:0}
+img{max-width:100%}
+
+/* Layout: Qlik-branded dashboard — Deep Blue app bar with the negative logo, open-file tabs,
+   KPI tile row, field profile and file layout cards, then a tabbed detail panel. */
+:root {
+  /* Qlik brand (Brand and Logo Guidelines, March 2026) */
+  --q-green: #009845; --q-gray: #54565A; --q-deepblue: #19426C; --q-ocean: #006580; --q-sky: #10CFC9;
+  --q-btn: #008936; --q-btn-hover: #156037;   /* digital-only greens for web controls */
+  --bg: #f3f5f6;
+  --surface: #ffffff;
+  --sunken: #f2f9f5;          /* green tint 5% */
+  --sunken-2: #f6f7f8;
+  --line: #dfe3e5;
+  --fg: #54565A;              /* body text in Qlik Gray */
+  --strong: #2f3134;
+  --heading: #19426C;         /* headings in Deep Blue */
+  --muted: #6f7378;
+  --accent: #009845;
+  --accent-soft: #e0f2e9;     /* green tint 12% */
+  --bar-bg: #19426C; --bar-fg: #ffffff; --bar-muted: #bcd0e2;
+  --file: #006580;
+  --c1: #009845; --c2: #19426C; --c3: #10CFC9;   /* chart order: Qlik Green, Deep Blue, Sky */
+  --warn: #B26A00; --warn-soft: #FFF4E0; --bad: #C62828; --bad-soft: #FDECEA;
+  --shadow: 0 1px 2px rgba(25, 66, 108, .06), 0 1px 1px rgba(25, 66, 108, .04);
+  --f-body: "Inter", "Segoe UI", Arial, system-ui, sans-serif;
+  --f-mono: Consolas, "Cascadia Mono", "Liberation Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1620; --surface: #142230; --sunken: #182a3a; --sunken-2: #111d29; --line: #24384b;
+    --fg: #c9d3dc; --strong: #eef3f7; --heading: #e6eef5; --muted: #8fa2b3;
+    --accent: #2fb56b; --accent-soft: #15382a;
+    --bar-bg: #19426C; --bar-fg: #ffffff; --bar-muted: #bcd0e2;
+    --c1: #2fb56b; --c2: #6e9bd6; --c3: #10CFC9; --file: #10CFC9;
+    --warn: #f0b45a; --warn-soft: #33270f; --bad: #ff8a80; --bad-soft: #3a1a18;
+    --shadow: none;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1620; --surface: #142230; --sunken: #182a3a; --sunken-2: #111d29; --line: #24384b;
+  --fg: #c9d3dc; --strong: #eef3f7; --heading: #e6eef5; --muted: #8fa2b3;
+  --accent: #2fb56b; --accent-soft: #15382a;
+  --bar-bg: #19426C; --bar-fg: #ffffff; --bar-muted: #bcd0e2;
+  --c1: #2fb56b; --c2: #6e9bd6; --c3: #10CFC9; --file: #10CFC9;
+  --warn: #f0b45a; --warn-soft: #33270f; --bad: #ff8a80; --bad-soft: #3a1a18;
+  --shadow: none;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.45; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bar-bg); }
+
+/* App bar */
+.appbar { background: var(--bar-bg); color: var(--bar-fg); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; }
+@media (max-width: 820px) { .appbar { position: static; } }
+.appbar-in { display: flex; align-items: center; gap: 14px 18px; flex-wrap: wrap; padding-block: 12px; }
+.appbar .logo { width: 84px; height: auto; display: block; }
+.appbar .divider { width: 1px; align-self: stretch; background: rgba(255,255,255,.28); margin-block: 4px; }
+.appbar h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.005em; color: #fff; }
+.appbar .spacer { flex: 1; }
+.privacy { font-size: 12.5px; color: var(--bar-muted); display: flex; align-items: center; gap: 6px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 4px; cursor: pointer; white-space: nowrap; color: var(--strong); }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--q-btn); border-color: var(--q-btn); color: #fff; font-weight: 600; }
+.btn.primary:hover { background: var(--q-btn-hover); border-color: var(--q-btn-hover); }
+.btn.small { padding: 3px 10px; font-size: 12.5px; }
+
+/* Open-file tabs */
+.filebar { background: var(--surface); border-bottom: 1px solid var(--line); }
+.filebar-in { display: flex; align-items: stretch; gap: 0; overflow-x: auto; overflow-y: hidden; }
+.files { display: flex; list-style: none; margin: 0; padding: 0; }
+.file-item { display: flex; align-items: center; border-right: 1px solid var(--line); position: relative; }
+.file-item .sel { border: 0; background: none; padding: 9px 6px 9px 14px; cursor: pointer; text-align: left; max-width: 260px; }
+.file-item .fname { display: block; font-weight: 600; font-size: 13px; color: var(--strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-item .fmeta { display: block; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.file-item.active { background: var(--sunken); }
+.file-item.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--accent); }
+.file-item.err .fmeta { color: var(--bad); }
+.file-item .close { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 4px 10px 4px 4px; font-size: 17px; line-height: 1; }
+.file-item .close:hover { color: var(--strong); }
+
+.drop-overlay { position: fixed; inset: 0; background: color-mix(in srgb, var(--q-green) 14%, transparent); border: 3px dashed var(--q-green); z-index: 50; display: grid; place-items: center; pointer-events: none; font-size: 26px; font-weight: 700; color: var(--q-green); }
+
+/* Dashboard */
+main { padding-block: 18px 32px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.title-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.title-row h2 { margin: 0; font-size: 22px; font-weight: 700; color: var(--heading); overflow-wrap: anywhere; text-wrap: balance; }
+.title-row .sub { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.title-row .sub b { font-weight: 500; color: var(--fg); }
+
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; box-shadow: var(--shadow); min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.kpi .label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.kpi .value { font-size: 26px; font-weight: 700; color: var(--heading); font-variant-numeric: tabular-nums; line-height: 1.2; overflow-wrap: anywhere; }
+.kpi .value small { font-size: 14px; font-weight: 600; color: var(--muted); margin-left: 3px; }
+.kpi .note { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.kpi.good .note::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 6px; vertical-align: 1px; }
+
+.charts { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
+@media (max-width: 1100px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); min-width: 0; display: flex; flex-direction: column; }
+.card-head { padding: 12px 14px 8px; display: flex; flex-direction: column; gap: 1px; }
+.card-head h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--heading); }
+.card-head p { margin: 0; font-size: 12px; color: var(--muted); }
+.card-body { padding: 4px 14px 14px; min-width: 0; }
+
+.s1 { background: var(--c1); } .s2 { background: var(--c2); } .s3 { background: var(--c3); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); padding: 0 14px 4px; }
+.legend i, .tdot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+.ti, .tf { background: var(--c1); } .tt { background: var(--c2); } .td { background: var(--c3); }
+
+.facts { margin: 14px 0 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 5px 14px; font-size: 12.5px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; color: var(--strong); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* Detail panel */
+.detail { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); min-width: 0; }
+.tabs { display: flex; gap: 2px; box-shadow: inset 0 -1px 0 var(--line); overflow-x: auto; overflow-y: hidden; padding: 0 8px; scrollbar-width: thin; }
+.tab { border: 0; background: none; padding: 11px 12px; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 13.5px; border-bottom: 3px solid transparent; white-space: nowrap; }
+.tab:hover { color: var(--strong); }
+.tab[aria-selected="true"] { color: var(--heading); border-bottom-color: var(--accent); }
+.tab .count { font-size: 11.5px; font-weight: 600; color: var(--muted); background: var(--sunken-2); border-radius: 10px; padding: 1px 7px; margin-left: 6px; font-variant-numeric: tabular-nums; }
+#pane { padding: 14px; min-width: 0; }
+
+.notice { border-radius: 4px; padding: 10px 14px; font-size: 13px; border-left: 4px solid currentColor; }
+.notice.warn { background: var(--warn-soft); color: var(--warn); }
+.notice.bad { background: var(--bad-soft); color: var(--bad); }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.search { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); flex: 1 1 300px; min-width: 0; }
+.search select { border: 0; border-right: 1px solid var(--line); background: var(--sunken-2); padding: 6px 8px; border-radius: 3px 0 0 3px; max-width: 45%; }
+.search input { border: 0; background: none; padding: 6px 10px; flex: 1; min-width: 0; outline: none; }
+.search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--fg); cursor: pointer; user-select: none; }
+.check input { accent-color: var(--q-green); }
+.rowcount { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; margin-left: auto; }
+
+.grid-wrap { position: relative; overflow: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); height: min(64vh, 620px); min-height: 280px; }
+table.grid { border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.grid th, .grid td { height: 30px; padding: 0 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); }
+.grid td { color: var(--strong); }
+.grid thead th { position: sticky; top: 0; z-index: 2; background: var(--sunken); color: var(--heading); font-size: 12.5px; font-weight: 700; text-align: left; cursor: pointer; user-select: none; height: 34px; border-bottom: 2px solid var(--accent); }
+.grid thead th:hover { background: var(--accent-soft); }
+.grid thead th .arrow { color: var(--accent); font-size: 10px; margin-left: 4px; }
+.grid th.rn, .grid td.rn { position: sticky; left: 0; z-index: 1; background: var(--sunken-2); color: var(--muted); text-align: right; font-size: 11.5px; cursor: default; }
+.grid thead th.rn { z-index: 3; background: var(--sunken); }
+.grid td.num { text-align: right; }
+.grid td.null { color: var(--muted); font-style: italic; }
+.grid tbody tr:hover td:not(.rn) { background: var(--accent-soft); }
+.grid tr.spacer td { height: auto; padding: 0; border: 0; }
+.empty-grid { padding: 40px 16px; text-align: center; color: var(--muted); }
+
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+table.meta { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.meta th, table.meta td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.meta thead th { font-size: 12px; color: var(--heading); background: var(--sunken); font-weight: 700; white-space: nowrap; border-bottom: 2px solid var(--accent); }
+table.meta td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.meta tbody tr.pick { cursor: pointer; }
+table.meta tbody tr.pick:hover td { background: var(--sunken-2); }
+table.meta tbody tr.on td { background: var(--accent-soft); }
+table.meta tbody tr:last-child td { border-bottom: 0; }
+.fieldname { font-weight: 600; color: var(--strong); overflow-wrap: anywhere; }
+.chip { display: inline-block; font-family: var(--f-mono); font-size: 11px; padding: 1px 6px; border-radius: 3px; background: var(--sunken-2); border: 1px solid var(--line); color: var(--muted); margin: 2px 3px 0 0; white-space: nowrap; }
+
+.split { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 1100px) { .split { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; min-width: 0; }
+.panel-head { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
+.panel-head h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--heading); overflow-wrap: anywhere; }
+.panel-head p { margin: 0; color: var(--muted); font-size: 12.5px; }
+.panel-body { padding: 12px 14px; }
+dl.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 13px; }
+dl.kv dt { color: var(--muted); }
+dl.kv dd { margin: 0; color: var(--strong); overflow-wrap: anywhere; }
+.vals { max-height: 420px; overflow: auto; border-top: 1px solid var(--line); }
+.vals table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.vals td { padding: 5px 14px; border-bottom: 1px solid var(--line); }
+.vals td.v { overflow-wrap: anywhere; color: var(--strong); }
+.vals td.c { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; width: 1%; white-space: nowrap; }
+.vals thead th { white-space: nowrap; position: sticky; top: 0; background: var(--surface); font-size: 12px; font-weight: 600; color: var(--muted); text-align: left; padding: 6px 14px; border-bottom: 1px solid var(--line); }
+.vals thead th.r { text-align: right; }
+.vals-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--line); }
+.vals-title { font-weight: 700; color: var(--heading); font-size: 13.5px; }
+.seg-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg-toggle button { border: 0; background: var(--surface); padding: 3px 10px; font-size: 12px; cursor: pointer; color: var(--fg); }
+.seg-toggle button + button { border-left: 1px solid var(--line); }
+.seg-toggle button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.typeline { display: block; white-space: nowrap; font-size: 12.5px; color: var(--strong); }
+
+pre.code { margin: 0; padding: 12px 14px; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.55; overflow-x: auto; white-space: pre; color: var(--strong); background: var(--sunken-2); }
+.xml-wrap { border: 1px solid var(--line); border-radius: 4px; max-height: 64vh; overflow: auto; }
+.x-tag { color: var(--c2); } .x-decl { color: var(--muted); }
+.muted { color: var(--muted); }
+.empty-state { padding: 28px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 4px; }
+.busy { color: var(--muted); font-size: 13px; padding: 12px 0; }
+
+/* Start screen */
+.start { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+@media (max-width: 860px) { .start { grid-template-columns: minmax(0, 1fr); } }
+.dropzone { background: var(--surface); border: 2px dashed color-mix(in srgb, var(--q-green) 55%, var(--line)); border-radius: 8px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; cursor: pointer; min-height: 300px; }
+.dropzone:hover, body.dragging .dropzone { background: var(--sunken); border-color: var(--q-green); }
+.dropzone svg { color: var(--accent); }
+.dropzone h2 { margin: 0; font-size: 22px; font-weight: 700; color: var(--heading); text-wrap: balance; }
+.dropzone p { margin: 0; color: var(--muted); max-width: 44ch; }
+.preview { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.preview h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--heading); }
+.preview ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.preview li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 13px; }
+.preview li b { display: block; color: var(--strong); font-weight: 600; }
+.preview .ico { width: 28px; height: 28px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+
+
+/* Field profile */
+.prof-scroll { max-height: 340px; overflow: auto; }
+table.prof { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.prof th { position: sticky; top: 0; background: var(--surface); text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.prof td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.prof tr:last-child td { border-bottom: 0; }
+table.prof .n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.prof td.n { color: var(--strong); font-weight: 500; }
+table.prof .fmt { display: block; font-size: 11.5px; color: var(--muted); font-family: var(--f-mono); }
+.type { display: inline-flex; align-items: center; white-space: nowrap; color: var(--strong); }
+.uniq { display: inline-flex; align-items: center; gap: 8px; }
+.uniq .meter { width: 72px; height: 6px; background: var(--sunken-2); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.uniq .meter span { display: block; height: 100%; background: var(--c1); }
+.uniq .n { font-size: 12.5px; color: var(--strong); min-width: 44px; }
+.card-chip { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 10px; white-space: nowrap; background: var(--sunken-2); color: var(--fg); border: 1px solid var(--line); }
+.card-chip.c-unique { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.card-chip.c-high { background: color-mix(in srgb, var(--c2) 14%, transparent); color: var(--heading); border-color: transparent; }
+.card-chip.c-const { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.card-chip.c-empty { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+
+/* File layout */
+ol.layout { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+ol.layout li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--line); position: relative; }
+ol.layout li:first-child { padding-top: 2px; }
+.step-no { width: 24px; height: 24px; border-radius: 50%; background: var(--sunken); border: 1px solid var(--line); display: grid; place-items: center; font-size: 12px; font-weight: 700; color: var(--heading); }
+.seg-main { display: flex; flex-direction: column; min-width: 0; }
+.seg-main b { color: var(--strong); font-weight: 600; }
+.seg-main .what { font-size: 12.5px; color: var(--muted); }
+.seg-main .range { font-size: 11.5px; color: var(--muted); }
+.seg-size { display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.seg-size b { color: var(--heading); font-size: 15px; }
+
+.lin-intro { margin: 0 0 14px; color: var(--fg); max-width: 85ch; font-size: 13px; }
+.lin-intro code { font-family: var(--f-mono); font-size: 12px; background: var(--sunken-2); padding: 0 4px; border-radius: 3px; }
+.lico { width: 34px; height: 34px; border-radius: 6px; display: grid; place-items: center; background: var(--sunken); color: var(--c2); }
+.lico.sm { width: 24px; height: 24px; }
+.lico.sm svg { width: 14px; height: 14px; }
+.lico.k-db { background: color-mix(in srgb, var(--c2) 14%, transparent); color: var(--c2); }
+.lico.k-qvd { background: var(--accent-soft); color: var(--accent); }
+.lico.k-file, .lico.k-web { background: color-mix(in srgb, var(--file) 14%, transparent); color: var(--file); }
+.lico.k-app { background: color-mix(in srgb, var(--c2) 14%, transparent); color: var(--heading); }
+.lico.k-gen, .lico.k-other { background: var(--sunken); color: var(--fg); }
+.lico.k-store { background: var(--accent-soft); color: var(--accent); }
+.lin-steps-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.lin-steps-head h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--heading); }
+.lin-steps-head .muted { font-size: 12.5px; }
+.lin-tables { display: flex; flex-direction: column; gap: 18px; }
+.lin-tables section { display: flex; flex-direction: column; gap: 8px; }
+table.lt td { vertical-align: middle; }
+table.lt th.r, table.lt td.n { text-align: right; }
+table.lt td.wrap { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12.5px; color: var(--strong); }
+table.lt td.disc-col { min-width: 220px; max-width: 360px; }
+table.lt td.stmt { min-width: 320px; }
+.ltype-cell { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; color: var(--strong); }
+
+.toast { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--q-deepblue); color: #fff; padding: 8px 14px; border-radius: 4px; font-size: 13px; z-index: 60; max-width: calc(100vw - 32px); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Lineage masking and grid gaps, progress */
+.mask-toggle { margin-left: auto; }
+.masked { color: var(--muted); }
+.grid td.gap { padding: 0; border-right: 0; background: transparent; }
+.progress { display: flex; flex-direction: column; gap: 8px; padding: 24px 0; color: var(--muted); font-size: 13px; max-width: 420px; }
+.progress .track { height: 6px; background: var(--sunken-2); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.progress .track span { display: block; height: 100%; background: var(--c1); width: 0; }
+
+/* Footer: pinned to the bottom of short pages */
+html { height: 100%; }
+body { min-height: 100%; display: flex; flex-direction: column; }
+body > main { flex: 1 0 auto; width: 100%; }
+.site-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 0; padding-block: 14px 22px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); text-align: center; }
+.site-foot span + span::before { content: "·"; margin: 0 8px; }
+@media (max-width: 560px) { .site-foot { flex-direction: column; align-items: center; } .site-foot span + span::before { content: none; } }
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-in gutter">
+    <img class="logo" src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIxMTkuNSAxMTEuMCA2NjIuMCAyNzguMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgaWQ9IkxheWVyXzEiIHhtbDpzcGFjZT0icHJlc2VydmUiIG92ZXJmbG93PSJoaWRkZW4iPjxnPjxnPjxyZWN0IHg9IjQ0NC45IiB5PSIxMTcuNCIgd2lkdGg9IjI3LjYiIGhlaWdodD0iMjY0LjEiIGZpbGw9IiNGRkZGRkYiLz48Zz48cmVjdCB4PSI1MjAiIHk9IjE5NyIgd2lkdGg9IjI3LjUiIGhlaWdodD0iMTg0LjUiIGZpbGw9IiNGRkZGRkYiLz48ZWxsaXBzZSBjeD0iNTM0IiBjeT0iMTM2LjIiIHJ4PSIxOC44IiByeT0iMTguOCIgZmlsbD0iI0ZGRkZGRiIgdHJhbnNmb3JtPSJtYXRyaXgoMC4xNjAyIC0wLjk4NzEgMC45ODcxIDAuMTYwMiAzMTMuOTc1IDY0MS40OTkpIi8+PC9nPjxwYXRoIGQ9Ik03NDAuNyAxOTcgNzAyLjQgMTk3IDYyMi45IDI2Ni42IDYyMi44IDExNy40IDU5NS4zIDExNy40IDU5NS4zIDM4MS41IDYyMi44IDM4MS41IDYyMi44IDI5Ni4zIDcwNC40IDM4MS41IDc0Mi42IDM4MS41IDY0NS4zIDI4Mi44WiIgZmlsbD0iI0ZGRkZGRiIvPjxnPjxwYXRoIGQ9Ik0yNTguMiAzNjAuMkMxOTcuMyAzNjAuMiAxNDggMzEwLjkgMTQ4IDI1MCAxNDggMjI0LjEgMTU2LjkgMjAwLjQgMTcxLjggMTgxLjZMMTUxLjcgMTYxLjJDMTMxLjYgMTg1LjMgMTE5LjUgMjE2LjIgMTE5LjUgMjUwIDExOS41IDMyNi42IDE4MS42IDM4OC43IDI1OC4yIDM4OC43IDI5MS40IDM4OC43IDMyMS44IDM3NyAzNDUuNyAzNTcuNkwzMjUuNiAzMzcuMkMzMDYuOSAzNTEuNiAyODMuNiAzNjAuMiAyNTguMiAzNjAuMloiIGZpbGw9IiNGRkZGRkYiLz48cGF0aCBkPSJNMzY0LjggMzM4LjMgMzY2LjQgMzM2LjdDMzg1LjQgMzEzIDM5Ni44IDI4Mi44IDM5Ni44IDI1MCAzOTYuOCAxNzMuNCAzMzQuNyAxMTEuMyAyNTguMSAxMTEuMyAyMjUuMSAxMTEuMyAxOTQuOCAxMjIuOCAxNzEgMTQyLjEgMTY0LjEgMTQ3LjcgMTU3LjggMTUzLjggMTUyLjEgMTYwLjYgMTUxLjkgMTYwLjggMTUxLjggMTYxIDE1MS42IDE2MS4yTDE3MS43IDE4MS42QzE3MS45IDE4MS40IDE3MiAxODEuMiAxNzIuMiAxODAuOSAxNzcuNyAxNzQgMTg0LjEgMTY3LjkgMTkxLjEgMTYyLjUgMjA5LjcgMTQ4LjMgMjMyLjkgMTM5LjggMjU4LjEgMTM5LjggMzE5IDEzOS44IDM2OC4zIDE4OS4xIDM2OC4zIDI1MCAzNjguMyAyNzUuNyAzNTkuNSAyOTkuMyAzNDQuOCAzMTggMzM5LjUgMzI0LjggMzMzLjQgMzMwLjkgMzI2LjYgMzM2LjMgMzI2LjIgMzM2LjYgMzI1LjkgMzM2LjggMzI1LjUgMzM3LjFMMzQ1LjYgMzU3LjUgMzY5LjMgMzgxLjUgNDA3LjUgMzgxLjUgMzY0LjggMzM4LjNaIiBmaWxsPSIjMDA5ODQ1Ii8+PC9nPjwvZz48L2c+PGc+PHBhdGggZD0iTTc2OCAzODMuOUM3NjYuMiAzODMuOSA3NjQuNSAzODMuNiA3NjIuOSAzODIuOSA3NjEuMyAzODIuMiA3NTkuOSAzODEuMyA3NTguNyAzODAuMSA3NTcuNSAzNzguOSA3NTYuNiAzNzcuNSA3NTUuOSAzNzUuOSA3NTUuMiAzNzQuMyA3NTQuOSAzNzIuNiA3NTQuOSAzNzAuOCA3NTQuOSAzNjkgNzU1LjIgMzY3LjMgNzU1LjkgMzY1LjcgNzU2LjYgMzY0LjEgNzU3LjUgMzYyLjcgNzU4LjcgMzYxLjUgNzU5LjkgMzYwLjMgNzYxLjMgMzU5LjQgNzYyLjkgMzU4LjcgNzY0LjUgMzU4IDc2Ni4yIDM1Ny43IDc2OCAzNTcuNyA3NjkuOCAzNTcuNyA3NzEuNSAzNTggNzczLjEgMzU4LjcgNzc0LjcgMzU5LjQgNzc2LjEgMzYwLjMgNzc3LjMgMzYxLjUgNzc4LjUgMzYyLjcgNzc5LjQgMzY0LjEgNzgwLjEgMzY1LjcgNzgwLjggMzY3LjMgNzgxLjEgMzY5IDc4MS4xIDM3MC44IDc4MS4xIDM3Mi42IDc4MC44IDM3NC4zIDc4MC4xIDM3NS45IDc3OS40IDM3Ny41IDc3OC41IDM3OC45IDc3Ny4zIDM4MC4xIDc3Ni4xIDM4MS4zIDc3NC43IDM4Mi4yIDc3My4xIDM4Mi45IDc3MS41IDM4My42IDc2OS44IDM4My45IDc2OCAzODMuOVpNNzY4IDM4MS41Qzc3MCAzODEuNSA3NzEuNyAzODEgNzczLjMgMzgwLjEgNzc0LjkgMzc5LjEgNzc2LjIgMzc3LjkgNzc3LjEgMzc2LjMgNzc4IDM3NC43IDc3OC41IDM3Mi45IDc3OC41IDM3MSA3NzguNSAzNjkuMSA3NzggMzY3LjMgNzc3LjEgMzY1LjcgNzc2LjIgMzY0LjEgNzc0LjkgMzYyLjggNzczLjMgMzYxLjkgNzcxLjcgMzYwLjkgNzY5LjkgMzYwLjUgNzY4IDM2MC41IDc2NiAzNjAuNSA3NjQuMyAzNjEgNzYyLjcgMzYxLjkgNzYxLjEgMzYyLjkgNzU5LjggMzY0LjEgNzU4LjkgMzY1LjcgNzU4IDM2Ny4zIDc1Ny41IDM2OS4xIDc1Ny41IDM3MSA3NTcuNSAzNzIuOSA3NTggMzc0LjcgNzU4LjkgMzc2LjMgNzU5LjggMzc3LjkgNzYxLjEgMzc5LjIgNzYyLjcgMzgwLjEgNzY0LjMgMzgxIDc2Ni4xIDM4MS41IDc2OCAzODEuNVpNNzYzLjYgMzc2LjcgNzYzLjYgMzY0LjcgNzY5LjQgMzY0LjdDNzcwIDM2NC43IDc3MC42IDM2NC44IDc3MS4yIDM2NS4xIDc3MS44IDM2NS40IDc3Mi4yIDM2NS44IDc3Mi42IDM2Ni40IDc3MyAzNjcgNzczLjIgMzY3LjYgNzczLjIgMzY4LjUgNzczLjIgMzY5LjMgNzczIDM3MCA3NzIuNiAzNzAuNiA3NzIuMiAzNzEuMiA3NzEuNyAzNzEuNiA3NzEuMSAzNzIgNzcwLjUgMzcyLjQgNzY5LjkgMzcyLjUgNzY5LjMgMzcyLjVMNzY0LjggMzcyLjUgNzY0LjggMzcwLjkgNzY4LjcgMzcwLjlDNzY5LjMgMzcwLjkgNzY5LjggMzcwLjcgNzcwLjIgMzcwLjMgNzcwLjYgMzY5LjkgNzcwLjkgMzY5LjMgNzcwLjkgMzY4LjYgNzcwLjkgMzY3LjggNzcwLjcgMzY3LjMgNzcwLjIgMzY3IDc2OS43IDM2Ni43IDc2OS4zIDM2Ni41IDc2OC44IDM2Ni41TDc2NS44IDM2Ni41IDc2NS44IDM3Ni45IDc2My42IDM3Ni45Wk03NzAuNiAzNzEuMSA3NzMuNiAzNzYuNyA3NzEuMyAzNzYuNyA3NjguNCAzNzEuMSA3NzAuNiAzNzEuMVoiIGZpbGw9IiNGRkZGRkYiLz48L2c+PC9zdmc+" alt="Qlik" width="84" height="35">
+    <span class="divider" aria-hidden="true"></span>
+    <h1>QVD Viewer</h1>
+    <span class="spacer"></span>
+    <span class="privacy">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      Files are read in your browser. Nothing is uploaded.
+    </span>
+    <label class="btn primary" for="fileInput">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      Open QVD files
+    </label>
+    <input id="fileInput" class="sr" type="file" accept=".qvd,.QVD" multiple>
+  </div>
+</header>
+<nav class="filebar" id="filebar" aria-label="Open files" hidden>
+  <div class="filebar-in gutter">
+    <ul class="files" id="fileList"></ul>
+  </div>
+</nav>
+<main id="main" class="gutter"></main>
+<footer class="site-foot gutter">
+  <span>QVD Viewer v1.0</span><span>Created by Kiril Kirin, Qlik Professional Services</span><span>Internal tool, not an official Qlik product</span>
+</footer>
+<div class="drop-overlay" id="dropOverlay" hidden>Drop QVD files to open</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+"use strict";
+/* =============================== QVD PARSER =============================== */
+const UTF8 = new TextDecoder("utf-8");
+const POW2 = Array.from({ length: 64 }, (_, i) => Math.pow(2, i));
+const MAX_HEADER_SCAN = 64 * 1024 * 1024;   // the XML header must end within the first 64 MB
+const MAX_FIELDS = 100000;
+const MAX_RECORD_BYTES = 1024 * 1024;
+const MAX_ROWS = 4294967295;                // row ids are stored in 32-bit arrays
+
+function findBytes(hay, needle, from, limit) {
+  const n0 = needle[0], L = needle.length, max = Math.min(hay.length, limit) - L;
+  outer: for (let i = from; i <= max; i++) {
+    if (hay[i] !== n0) continue;
+    for (let k = 1; k < L; k++) if (hay[i + k] !== needle[k]) continue outer;
+    return i;
+  }
+  return -1;
+}
+const childText = (el, tag) => { const c = el && Array.from(el.children).find(x => x.tagName === tag); return c ? c.textContent : ""; };
+const childEl = (el, tag) => el && Array.from(el.children).find(x => x.tagName === tag);
+/* Reads a whole-number header value. Returns NaN when the text is not a plain integer. */
+const toInt = s => { const v = String(s ?? "").trim(); return /^-?\d+$/.test(v) ? Number(v) : (v === "" ? 0 : NaN); };
+
+/* Returns true when bytes p..e are valid UTF-8. */
+function isValidUtf8(u8, p, e) {
+  while (p < e) {
+    const b = u8[p];
+    if (b < 0x80) { p++; continue; }
+    let n, min;
+    if (b >= 0xc2 && b <= 0xdf) { n = 1; min = 0x80; }
+    else if (b >= 0xe0 && b <= 0xef) { n = 2; min = 0x800; }
+    else if (b >= 0xf0 && b <= 0xf4) { n = 3; min = 0x10000; }
+    else return false;
+    if (p + n >= e) return false;
+    let cp = b & (0x3f >> n);
+    for (let k = 1; k <= n; k++) { const c = u8[p + k]; if ((c & 0xc0) !== 0x80) return false; cp = (cp << 6) | (c & 0x3f); }
+    if (cp < min || cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff)) return false;
+    p += n + 1;
+  }
+  return true;
+}
+
+function decodeText(u8, p, e) {
+  if (e - p < 4096) {
+    let ascii = true;
+    for (let i = p; i < e; i++) if (u8[i] > 127) { ascii = false; break; }
+    if (ascii) return String.fromCharCode.apply(null, u8.subarray(p, e));
+  }
+  return UTF8.decode(u8.subarray(p, e));
+}
+
+/* Text of symbol s, decoded on first use and cached. Returns undefined for pure numbers. */
+function symText(f, s) {
+  let v = f.tc[s];
+  if (v === undefined && f.txtOff[s] >= 0) { v = decodeText(f.u8, f.txtOff[s], f.txtEnd[s]); f.tc[s] = v; }
+  return v;
+}
+
+function bad(msg) { return new Error(msg); }
+
+function parseQvd(buffer) {
+  const u8 = new Uint8Array(buffer);
+  const dv = new DataView(buffer);
+  const endTag = new TextEncoder().encode("</QvdTableHeader>");
+  const tagPos = findBytes(u8, endTag, 0, MAX_HEADER_SCAN);
+  if (tagPos < 0) throw bad("No QVD header was found in the first 64 MB. The file is not a QVD file, or its header is damaged.");
+  const headerEnd = tagPos + endTag.length;
+  // The binary section starts after the header delimiter (normally "\r\n\0").
+  let p = headerEnd;
+  while (p < u8.length && (u8[p] === 13 || u8[p] === 10 || u8[p] === 32 || u8[p] === 9)) p++;
+  if (u8[p] === 0) p++;
+  const symStart = p;
+
+  let headerXml = UTF8.decode(u8.subarray(0, headerEnd));
+  if (headerXml.charCodeAt(0) === 0xfeff) headerXml = headerXml.slice(1);
+  if (/<!DOCTYPE|<!ENTITY/i.test(headerXml)) throw bad("The XML header contains a DOCTYPE or ENTITY declaration. Qlik never writes these, so the file was rejected.");
+  const doc = new DOMParser().parseFromString(headerXml, "application/xml");
+  if (doc.querySelector("parsererror")) throw bad("The XML header could not be read. The header is not well-formed XML.");
+  const root = doc.documentElement;
+  if (root.tagName !== "QvdTableHeader") throw bad("The XML header does not start with <QvdTableHeader>.");
+
+  const fieldEls = Array.from(childEl(root, "Fields")?.children || []).filter(e => e.tagName === "QvdFieldHeader");
+  if (fieldEls.length > MAX_FIELDS) throw bad(`The header lists ${fieldEls.length} fields. The limit is ${MAX_FIELDS}.`);
+
+  const t = {
+    headerXml, root,
+    tableName: childText(root, "TableName"),
+    recordByteSize: toInt(childText(root, "RecordByteSize")),
+    noOfRecords: toInt(childText(root, "NoOfRecords")),
+    idxOffset: toInt(childText(root, "Offset")),
+    idxLength: toInt(childText(root, "Length")),
+    compression: childText(root, "Compression").trim(),
+    encryption: (childEl(root, "EncryptionInfo")?.textContent || "").trim(),
+    tableTags: Array.from(childEl(root, "TableTags")?.children || []).map(x => x.textContent),
+    lineage: Array.from(childEl(root, "Lineage")?.children || []).filter(x => x.tagName === "LineageInfo")
+      .map(x => ({ discriminator: childText(x, "Discriminator"), statement: childText(x, "Statement") })),
+    u8, symStart, warnings: [], badText: 0,
+  };
+
+  // Table-level checks
+  const rs = t.recordByteSize, N = t.noOfRecords;
+  const intOk = (v, min, max) => Number.isSafeInteger(v) && v >= min && v <= max;
+  if (!intOk(N, 0, MAX_ROWS)) throw bad(`NoOfRecords (${childText(root, "NoOfRecords")}) is not a valid row count.`);
+  if (!intOk(rs, 0, MAX_RECORD_BYTES)) throw bad(`RecordByteSize (${childText(root, "RecordByteSize")}) is not valid. It must be a whole number from 0 to ${fmtInt(MAX_RECORD_BYTES)}.`);
+  if (!intOk(t.idxOffset, 0, u8.length)) throw bad(`The index table Offset (${childText(root, "Offset")}) is outside the file.`);
+  t.idxStart = symStart + t.idxOffset;
+  const idxBytes = rs * N;
+  if (t.idxStart + idxBytes > u8.length) throw bad(`The file is truncated. The header expects ${fmtInt(t.idxStart + idxBytes)} bytes but the file has ${fmtInt(u8.length)} bytes.`);
+  if (t.idxLength !== idxBytes) t.warnings.push(`The index table Length in the header (${childText(root, "Length")}) does not match records × record size (${fmtInt(idxBytes)}). The viewer uses records × record size.`);
+  if (t.encryption) t.warnings.push("The header has an <EncryptionInfo> entry. Encrypted QVD content cannot be decoded here, so values may be unreadable.");
+  if (t.compression) t.warnings.push(`The header declares compression "${t.compression}". This viewer reads uncompressed QVD data only.`);
+
+  // Field-level checks and symbol tables
+  t.fields = fieldEls.map((e, i) => {
+    const nf = childEl(e, "NumberFormat");
+    const f = {
+      i, u8,
+      name: childText(e, "FieldName"),
+      bitOffset: toInt(childText(e, "BitOffset")),
+      bitWidth: toInt(childText(e, "BitWidth")),
+      bias: toInt(childText(e, "Bias")),
+      nf: {
+        type: childText(nf, "Type") || "UNKNOWN",
+        nDec: childText(nf, "nDec"), useThou: childText(nf, "UseThou"),
+        fmt: childText(nf, "Fmt"), dec: childText(nf, "Dec"), thou: childText(nf, "Thou"),
+      },
+      noOfSymbols: toInt(childText(e, "NoOfSymbols")),
+      offset: toInt(childText(e, "Offset")),
+      length: toInt(childText(e, "Length")),
+      comment: childText(e, "Comment"),
+      tags: Array.from(childEl(e, "Tags")?.children || []).map(x => x.textContent),
+    };
+    const where = `Field "${f.name || i + 1}"`;
+    if (!intOk(f.bitWidth, 0, 32)) throw bad(`${where} has BitWidth ${childText(e, "BitWidth")}. It must be from 0 to 32.`);
+    if (!intOk(f.bitOffset, 0, rs * 8)) throw bad(`${where} has BitOffset ${childText(e, "BitOffset")}, which is outside the ${rs}-byte record.`);
+    if (f.bitOffset + f.bitWidth > rs * 8) throw bad(`${where} uses bits ${f.bitOffset}–${f.bitOffset + f.bitWidth - 1}, but each record has only ${rs * 8} bits.`);
+    if (!intOk(f.bias, -2147483648, 2147483647)) throw bad(`${where} has a Bias that is not a valid whole number.`);
+    if (!intOk(f.length, 0, u8.length)) throw bad(`${where} has a symbol table Length that is not valid.`);
+    if (!intOk(f.offset, 0, u8.length)) throw bad(`${where} has a symbol table Offset that is not valid.`);
+    if (symStart + f.offset + f.length > u8.length) throw bad(`${where}: its symbol table runs past the end of the file.`);
+    // Each value needs at least 2 bytes (type byte + data), so this bounds memory use before allocating.
+    if (!intOk(f.noOfSymbols, 0, Math.floor(f.length / 2))) throw bad(`${where} declares ${childText(e, "NoOfSymbols")} values, which cannot fit in its ${fmtInt(f.length)}-byte symbol table.`);
+    return f;
+  });
+
+  for (const f of t.fields) {
+    const n = f.noOfSymbols;
+    const num = new Float64Array(n).fill(NaN);
+    const kind = new Uint8Array(n);
+    const txtOff = new Int32Array(n).fill(-1);
+    const txtEnd = new Int32Array(n);
+    const counts = [0, 0, 0, 0]; // int, float, text, dual
+    let q = symStart + f.offset;
+    const end = q + f.length;
+    const readStr = s => {
+      let e = q, ascii = true;
+      while (e < end && u8[e] !== 0) { if (u8[e] > 127) ascii = false; e++; }
+      if (e >= end) throw bad(`Field "${f.name}": a text value is not terminated inside its symbol table. The file may be damaged.`);
+      if (!ascii && !isValidUtf8(u8, q, e)) t.badText++;
+      txtOff[s] = q; txtEnd[s] = e; q = e + 1;
+    };
+    const need = (k, s) => { if (q + k > end) throw bad(`Field "${f.name}": value ${s + 1} runs past the end of its symbol table.`); };
+    for (let s = 0; s < n; s++) {
+      if (q >= end) throw bad(`Field "${f.name}" declares ${fmtInt(n)} values but its symbol table ends after ${fmtInt(s)}.`);
+      const type = u8[q++];
+      kind[s] = type;
+      switch (type) {
+        case 1: need(4, s); num[s] = dv.getInt32(q, true); q += 4; counts[0]++; break;
+        case 2: need(8, s); num[s] = dv.getFloat64(q, true); q += 8; counts[1]++; break;
+        case 4: readStr(s); counts[2]++; break;
+        case 5: need(4, s); num[s] = dv.getInt32(q, true); q += 4; readStr(s); counts[3]++; break;
+        case 6: need(8, s); num[s] = dv.getFloat64(q, true); q += 8; readStr(s); counts[3]++; break;
+        default: throw bad(`Field "${f.name}" has an unknown value type byte 0x${type.toString(16).padStart(2, "0")} at byte ${fmtInt(q - 1)}. The file may be damaged.`);
+      }
+    }
+    Object.assign(f, { num, kind, txtOff, txtEnd, tc: new Array(n), typeCounts: counts });
+    f._bs = f.bitOffset >> 3;
+    f._sh = POW2[f.bitOffset & 7];
+    f._mod = POW2[f.bitWidth];
+    f._nb = Math.ceil(((f.bitOffset & 7) + f.bitWidth) / 8);
+  }
+  if (t.badText) t.warnings.push(`${fmtInt(t.badText)} text value${t.badText === 1 ? " is" : "s are"} not valid UTF-8. Unreadable characters show as "\uFFFD".`);
+  return t;
+}
+
+/* Returns the symbol index for (row, field), or -1 for NULL. */
+function symIdx(t, row, f) {
+  let raw = 0;
+  if (f.bitWidth > 0) {
+    const o = t.idxStart + row * t.recordByteSize + f._bs;
+    const u8 = t.u8;
+    let v = 0, mul = 1;
+    for (let k = 0; k < f._nb; k++) { v += u8[o + k] * mul; mul *= 256; }
+    raw = Math.floor(v / f._sh) % f._mod;
+  }
+  const idx = raw + f.bias;
+  return idx < 0 || idx >= f.noOfSymbols ? -1 : idx;
+}
+
+/* ============================ VALUE FORMATTING ============================ */
+const pad = (n, w = 2) => String(n).padStart(w, "0");
+/* Qlik serial date (days since 1899-12-30) to a UTC Date, or null when out of range. */
+function serialToDate(v) {
+  if (!Number.isFinite(v)) return null;
+  const d = new Date(Math.round((v - 25569) * 86400000));
+  const y = d.getUTCFullYear();
+  return Number.isFinite(d.getTime()) && y >= 1 && y <= 9999 ? d : null;
+}
+function fmtDate(d) { return `${pad(d.getUTCFullYear(), 4)}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`; }
+function fmtTime(d) { return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`; }
+function fmtNumber(v) {
+  if (Number.isInteger(v)) return String(v);
+  return String(Number(v.toPrecision(15)));
+}
+function formatPure(f, v) {
+  const type = f.nf.type;
+  if (type === "DATE" || type === "TIMESTAMP" || type === "TIME") {
+    const d = serialToDate(type === "TIME" ? 25569 + (v % 1) : v);
+    if (d) return type === "DATE" ? fmtDate(d) : type === "TIME" ? fmtTime(d) : `${fmtDate(d)} ${fmtTime(d)}`;
+  }
+  return fmtNumber(v);
+}
+function display(f, s, raw) {
+  if (s < 0) return null;
+  const k = f.kind[s];
+  if (k === 4) return symText(f, s);
+  if (k === 5 || k === 6) return raw ? fmtNumber(f.num[s]) : symText(f, s);
+  return raw ? fmtNumber(f.num[s]) : formatPure(f, f.num[s]);
+}
+const NUMERIC_TEXT = /^[\s\d.,+\-$€£%:/]+$/;
+const isNumericCell = (f, s, raw) => s >= 0 && (f.kind[s] === 1 || f.kind[s] === 2 || (raw && f.kind[s] !== 4) || (f.kind[s] >= 5 && !raw && NUMERIC_TEXT.test(symText(f, s))));
+
+const fmtInt = n => n.toLocaleString("en-US");
+function fmtBytes(b) {
+  if (b < 1024) return `${b} B`;
+  const u = ["KB", "MB", "GB", "TB"]; let i = -1;
+  do { b /= 1024; i++; } while (b >= 1024 && i < u.length - 1);
+  return `${b.toFixed(b < 10 ? 2 : 1)} ${u[i]}`;
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (a, b) => b ? (a / b) * 100 : 0;
+const fmtPct = v => v === 0 ? "0%" : v < 0.1 ? "<0.1%" : `${v.toFixed(v < 10 || (v >= 99.5 && v < 100) ? 1 : 0)}%`;
+
+/* Hides credential values in connection strings and CONNECT statements. */
+const SECRET_RE = /\b(XPassword|Password|Pwd|XUserId|User\s?Id|UID|[A-Za-z]*Token|[A-Za-z]*Secret|Api_?Key|AccountKey|SharedAccessKey)(\s*=\s*|\s*:\s*|\s+is\s+)("[^"]*"|'[^']*'|[^;,\s"')\]<]+)/gi;
+const maskSecrets = s => String(s || "").replace(SECRET_RE, "$1$2••••••");
+const hasSecrets = s => { SECRET_RE.lastIndex = 0; const r = SECRET_RE.test(String(s || "")); SECRET_RE.lastIndex = 0; return r; };
+
+/* ============================== ASYNC WORK =============================== */
+/* Runs body(i) for i in [0, n) in time slices so the page stays responsive.
+   Stops early (returns false) when isCurrent() becomes false. */
+async function chunked(n, body, onProgress, isCurrent) {
+  const SLICE_MS = 24;
+  let i = 0;
+  while (i < n) {
+    const stop = performance.now() + SLICE_MS;
+    do { body(i++); } while (i < n && (i & 1023 || performance.now() < stop));
+    if (i < n) {
+      onProgress && onProgress(i / n);
+      await new Promise(r => setTimeout(r, 0));
+      if (isCurrent && !isCurrent()) return false;
+    }
+  }
+  return true;
+}
+
+/* ================================= STATE ================================== */
+const state = { files: [], active: -1, nextId: 1 };
+const $ = sel => document.querySelector(sel);
+
+function addFileEntry(name, size, buffer) {
+  const entry = { id: state.nextId++, name, size, tab: "data", search: "", searchField: -1, raw: false, sort: null, view: null, scrollTop: 0, scrollLeft: 0, selField: 0, showSecrets: false, job: 0 };
+  const t0 = performance.now();
+  try {
+    entry.t = parseQvd(buffer);
+    entry.parseMs = performance.now() - t0;
+  } catch (e) {
+    entry.error = e instanceof RangeError ? "The file is too large for the memory available to this browser tab." : (e.message || String(e));
+  }
+  state.files.push(entry);
+  state.active = state.files.length - 1;
+  renderAll();
+}
+
+async function openFiles(fileList) {
+  for (const file of Array.from(fileList)) {
+    if (!/\.qvd$/i.test(file.name)) { toast(`${file.name} skipped: only .qvd files can be opened.`); continue; }
+    $("#main").innerHTML = `<div class="busy">Reading ${esc(file.name)} (${fmtBytes(file.size)})…</div>`;
+    await new Promise(r => setTimeout(r, 20));
+    try {
+      addFileEntry(file.name, file.size, await file.arrayBuffer());
+    } catch (e) {
+      state.files.push({ id: state.nextId++, name: file.name, size: file.size, error: `The browser could not read this file (${e.message}). Very large files can exceed browser memory limits.` });
+      state.active = state.files.length - 1;
+      renderAll();
+    }
+  }
+}
+
+/* ================================ RENDERING =============================== */
+function renderAll() { renderRail(); renderMain(); }
+
+function renderRail() {
+  const ul = $("#fileList");
+  $("#filebar").hidden = state.files.length === 0;
+  ul.innerHTML = state.files.map((f, i) => `
+    <li class="file-item ${i === state.active ? "active" : ""} ${f.error ? "err" : ""}">
+      <button class="sel" data-i="${i}" title="${esc(f.name)}" ${i === state.active ? 'aria-current="page"' : ""}>
+        <span class="fname">${esc(f.name)}</span>
+        <span class="fmeta">${f.error ? "Could not read" : `${fmtInt(f.t.noOfRecords)} rows · ${f.t.fields.length} fields`}</span>
+      </button>
+      <button class="close" data-close="${i}" aria-label="Close ${esc(f.name)}">×</button>
+    </li>`).join("");
+}
+
+const ICON = {
+  table: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>',
+  chart: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  fields: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+  code: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg>',
+};
+
+function renderStart(main) {
+  main.innerHTML = `
+    <div class="start">
+      <label class="dropzone" for="fileInput">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 18v-6M9 15l3-3 3 3"/></svg>
+        <h2>Open a QVD file to build its dashboard</h2>
+        <p>Drop one or more .qvd files anywhere on this page, or click here to browse a Windows folder. You can open several files and switch between them.</p>
+      </label>
+      <div class="preview">
+        <h3>What you will see</h3>
+        <ul>
+          <li><span class="ico">${ICON.chart}</span><span><b>Summary tiles and field profile</b>Records, fields, file size, distinct values, null cells, each field's uniqueness and the file's byte layout.</span></li>
+          <li><span class="ico">${ICON.table}</span><span><b>Data</b>Every record, with search, sorting and copy to Excel.</span></li>
+          <li><span class="ico">${ICON.fields}</span><span><b>Fields</b>Number formats, tags, bit layout, nulls and each field's most frequent values.</span></li>
+          <li><span class="ico">${ICON.code}</span><span><b>Header and lineage</b>Table header elements, lineage sources and statements, and the raw XML header.</span></li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+function progressHtml(label, id) {
+  return `<div class="progress" role="status"><span id="${id}Label">${esc(label)}</span><span class="track"><span id="${id}Bar"></span></span></div>`;
+}
+function setProgress(id, frac, label) {
+  const bar = document.getElementById(id + "Bar"); if (bar) bar.style.width = `${Math.round(frac * 100)}%`;
+  if (label) { const l = document.getElementById(id + "Label"); if (l) l.textContent = label; }
+}
+
+/* Counts nulls and value frequencies for every field in one pass over the rows. */
+async function ensureProfile(e) {
+  const t = e.t;
+  if (t.profiled) return true;
+  if (t.profiling) return t.profiling;
+  const F = t.fields;
+  const cnt = F.map(f => new Uint32Array(f.noOfSymbols));
+  const nulls = new Float64Array(F.length);
+  t.profiling = chunked(t.noOfRecords, r => {
+    for (let j = 0; j < F.length; j++) { const s = symIdx(t, r, F[j]); if (s < 0) nulls[j]++; else cnt[j][s]++; }
+  }, frac => setProgress("prof", frac, `Profiling ${fmtInt(t.noOfRecords)} rows × ${F.length} fields… ${Math.round(frac * 100)}%`),
+  () => state.files.includes(e)).then(ok => {
+    if (!ok) { t.profiling = null; return false; }
+    F.forEach((f, j) => { f.freq = cnt[j]; f.nulls = nulls[j]; });
+    t.profiled = true; t.profiling = null;
+    return true;
+  });
+  return t.profiling;
+}
+
+function renderMain() {
+  const main = $("#main");
+  const e = state.files[state.active];
+  if (!e) { renderStart(main); return; }
+  if (e.error) {
+    main.innerHTML = `<div class="title-row"><h2>${esc(e.name)}</h2><span class="sub">${fmtBytes(e.size)}</span></div>
+      <div class="notice bad"><strong>This file could not be read.</strong> ${esc(e.error)}</div>`;
+    return;
+  }
+  const t = e.t;
+  if (!t.profiled) {
+    main.innerHTML = progressHtml(`Profiling ${fmtInt(t.noOfRecords)} rows × ${t.fields.length} fields…`, "prof");
+    ensureProfile(e).then(ok => { if (ok && state.files[state.active] === e) renderMain(); });
+    return;
+  }
+  const g = n => childText(t.root, n);
+  const N = t.noOfRecords, F = t.fields.length;
+  const cells = N * F;
+  const nullCells = t.fields.reduce((a, f) => a + f.nulls, 0);
+  const distinct = t.fields.reduce((a, f) => a + f.noOfSymbols, 0);
+  const symBytes = t.fields.reduce((a, f) => a + f.length, 0);
+  const idxBytes = t.recordByteSize * N;
+  const headerBytes = t.symStart;
+  const other = Math.max(0, e.size - headerBytes - symBytes - idxBytes);
+  const fieldsWithNulls = t.fields.filter(f => f.nulls).length;
+  const sources = new Set(t.lineage.map(x => x.discriminator)).size;
+
+  const kpis = [
+    { label: "Records", value: fmtInt(N), note: `${fmtInt(cells)} cells` },
+    { label: "Fields", value: fmtInt(F), note: `${t.recordByteSize} bytes per record` },
+    { label: "File size", value: esc(fmtBytes(e.size)).replace(/ (\w+)$/, "<small>$1</small>"), note: N ? `${(e.size / N).toFixed(1)} bytes per record on disk` : "No records", html: true },
+    { label: "Distinct values", value: fmtInt(distinct), note: "Sum across all fields" },
+    { label: "Null cells", value: fmtPct(pct(nullCells, cells)), note: nullCells ? `${fmtInt(nullCells)} in ${fieldsWithNulls} field${fieldsWithNulls === 1 ? "" : "s"}` : "No nulls in any field", cls: nullCells ? "" : "good" },
+    { label: "Lineage entries", value: fmtInt(t.lineage.length), note: t.lineage.length ? `${sources} distinct source${sources === 1 ? "" : "s"}` : "None recorded" },
+  ];
+
+  const profile = t.fields.map(f => {
+    const [i, fl, tx, d] = f.typeCounts; const num = i + fl;
+    const kinds = [[num, "s1", "Number"], [tx, "s2", "Text"], [d, "s3", "Dual"]].filter(x => x[0]);
+    const typeCell = kinds.length === 0 ? `<span class="muted">No values</span>`
+      : kinds.length === 1 ? `<span class="type"><i class="tdot ${kinds[0][1]}"></i>${kinds[0][2]}</span>`
+      : `<span class="type" title="${kinds.map(k => `${k[2]} ${fmtInt(k[0])}`).join(", ")}"><i class="tdot ${kinds.slice().sort((a, b) => b[0] - a[0])[0][1]}"></i>Mixed</span>`;
+    const nonNull = N - f.nulls;
+    const u = nonNull ? f.noOfSymbols / nonNull : 0;
+    let card;
+    if (!nonNull) card = ["Empty", "c-empty", "Every row is null"];
+    else if (f.noOfSymbols === 1) card = ["Constant", "c-const", "One value in every non-null row"];
+    else if (f.noOfSymbols === nonNull) card = ["Unique", "c-unique", "Every non-null row has a different value; candidate key"];
+    else if (u >= 0.5) card = ["High", "c-high", "Distinct values are 50% or more of non-null rows"];
+    else if (u >= 0.01) card = ["Medium", "c-med", "Distinct values are 1–50% of non-null rows"];
+    else card = ["Low", "c-low", "Distinct values are under 1% of non-null rows"];
+    const fmt = f.nf.type && f.nf.type !== "UNKNOWN" ? `${f.nf.type}${f.nf.fmt ? ` · ${f.nf.fmt}` : ""}` : "";
+    return `<tr>
+      <td><span class="fieldname">${esc(f.name)}</span>${fmt ? `<span class="fmt">${esc(fmt)}</span>` : ""}</td>
+      <td>${typeCell}</td>
+      <td class="n">${fmtInt(f.noOfSymbols)}</td>
+      <td><span class="uniq" title="${fmtInt(f.noOfSymbols)} distinct ÷ ${fmtInt(nonNull)} non-null rows"><span class="meter"><span style="width:${Math.min(100, u * 100)}%"></span></span><span class="n">${fmtPct(u * 100)}</span></span></td>
+      <td><span class="card-chip ${card[1]}" title="${card[2]}">${card[0]}</span></td>
+      <td class="n ${f.nulls ? "" : "muted"}">${f.nulls ? `${fmtInt(f.nulls)} <span class="muted">(${fmtPct(pct(f.nulls, N))})</span>` : "0"}</td>
+    </tr>`;
+  }).join("");
+
+  const segs = [
+    ["XML header", "Table and field metadata, lineage", 0, headerBytes],
+    ["Symbol tables", "Each field's distinct values, stored once", headerBytes, symBytes],
+    ["Index table", `${fmtInt(N)} records × ${t.recordByteSize} bytes of bit-packed pointers`, t.idxStart, idxBytes],
+  ];
+  if (other > 0) segs.push(["Other bytes", "Not described by the header", t.idxStart + idxBytes, other]);
+  const layout = `
+    <ol class="layout">${segs.map(([name, what, start, len], i) => `
+      <li>
+        <span class="step-no">${i + 1}</span>
+        <span class="seg-main"><b>${name}</b><span class="what">${esc(what)}</span><span class="range mono">bytes ${fmtInt(start)} – ${fmtInt(start + len)}</span></span>
+        <span class="seg-size"><b>${fmtBytes(len)}</b><span class="muted">${fmtPct(pct(len, e.size))}</span></span>
+      </li>`).join("")}
+    </ol>
+    <dl class="facts">
+      <dt>Created (UTC)</dt><dd>${esc(g("CreateUtcTime") || "—")}</dd>
+      <dt>Qlik build</dt><dd>${esc(g("QvBuildNo") || "—")}</dd>
+      <dt>Creator document</dt><dd class="mono">${esc(g("CreatorDoc") || "—")}</dd>
+    </dl>`;
+
+  const notices = t.warnings.map(w => `<div class="notice warn">${esc(w)}</div>`).join("");
+  const tabs = [["data", "Data", fmtInt(N)], ["fields", "Fields", F], ["header", "Table header", ""], ["lineage", "Lineage", t.lineage.length], ["xml", "Header XML", ""]];
+
+  main.innerHTML = `
+    <div class="title-row"><h2>${esc(t.tableName || e.name)}</h2><span class="sub"><b>${esc(e.name)}</b> · created ${esc(g("CreateUtcTime") || "unknown")} UTC</span></div>
+    ${notices}
+    <section class="kpis" aria-label="Summary">${kpis.map(k => `
+      <div class="kpi ${k.cls || ""}"><span class="label">${k.label}</span><span class="value">${k.html ? k.value : esc(k.value)}</span><span class="note">${esc(k.note)}</span></div>`).join("")}
+    </section>
+    <section class="charts" aria-label="Field profile and file layout">
+      <div class="card">
+        <div class="card-head"><h3>Field profile</h3><p>Distinct values and uniqueness per field, in file order. Uniqueness is distinct values ÷ non-null rows.</p></div>
+        <div class="card-body"><div class="prof-scroll"><table class="prof">
+          <thead><tr><th>Field</th><th>Stored as</th><th class="n">Distinct values</th><th>Uniqueness</th><th>Cardinality</th><th class="n">Nulls</th></tr></thead>
+          <tbody>${profile}</tbody></table></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>File layout</h3><p>The ${fmtBytes(e.size)} file, in the order Qlik writes it</p></div>
+        <div class="card-body">${layout}</div>
+      </div>
+    </section>
+    <section class="detail">
+      <div class="tabs" role="tablist" aria-label="File details">${tabs.map(([id, label, c]) => `<button class="tab" role="tab" id="tab-${id}" data-tab="${id}" aria-controls="pane" aria-selected="${e.tab === id}" tabindex="${e.tab === id ? 0 : -1}">${label}${c !== "" ? `<span class="count">${c}</span>` : ""}</button>`).join("")}</div>
+      <div id="pane" role="tabpanel" tabindex="0" aria-labelledby="tab-${e.tab}"></div>
+    </section>`;
+  renderPane();
+}
+
+function selectTab(e, id, focus) {
+  e.tab = id;
+  document.querySelectorAll(".tab").forEach(b => {
+    const on = b.dataset.tab === id;
+    b.setAttribute("aria-selected", on); b.tabIndex = on ? 0 : -1;
+    if (on && focus) b.focus();
+  });
+  const pane = $("#pane"); if (pane) pane.setAttribute("aria-labelledby", `tab-${id}`);
+  renderPane();
+}
+
+/* Renders the active tab. Keeps focus and caret in the search box across re-renders. */
+function renderPane() {
+  const e = state.files[state.active];
+  const pane = $("#pane");
+  if (!e || !pane) return;
+  const active = document.activeElement;
+  const keepSearch = active && active.id === "searchBox";
+  const caret = keepSearch ? active.selectionStart : 0;
+  ({ data: renderData, fields: renderFields, header: renderHeader, lineage: renderLineage, xml: renderXml })[e.tab](e, pane);
+  if (keepSearch) { const sb = $("#searchBox"); if (sb) { sb.focus(); try { sb.setSelectionRange(caret, caret); } catch {} } }
+}
+
+/* ---------- Lineage tab ---------- */
+const LIN_ICON = {
+  db: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>',
+  file: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>',
+  qvd: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
+  app: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+  gen: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>',
+  web: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
+  store: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>',
+  other: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/></svg>',
+};
+
+/* Classifies a lineage Discriminator into a source type. */
+function classifySource(disc, statement) {
+  const d = (disc || "").trim();
+  const st = (statement || "").trim();
+  if (!d) return { kind: "other", type: "Unknown source" };
+  if (/^STORE\b/i.test(d)) return { kind: "store", type: "Store step" };
+  const gen = d.match(/^([A-Z_]+);?$/);
+  if (gen) return { kind: "gen", type: { AUTOGENERATE: "Generated (AUTOGENERATE)", INLINE: "Inline table", RESIDENT: "Resident table" }[gen[1]] || "Script-generated" };
+  const conn = d.match(/^(ODBC|OLEDB|OLE DB|CUSTOM|SQL|REST|SNOWFLAKE|DATABRICKS)\b/i);
+  if (conn || /\b(DSN|Provider|Data Source|Server|Host)\s*=/i.test(d)) return { kind: "db", type: conn ? `${conn[1].toUpperCase()} connection` : "Database connection" };
+  if (/^https?:\/\//i.test(d)) return { kind: "web", type: "Web file" };
+  const base = d.split(/[\\/]/).pop().replace(/\s*\(.*\)\s*$/, "") || d;
+  const ext = ((base.match(/\.([a-z0-9]+)$/i) || [])[1] || "").toLowerCase();
+  if (ext === "qvd") return { kind: "qvd", type: "QVD file" };
+  if (ext === "qvw" || ext === "qvf") return { kind: "app", type: /^binary/i.test(st) ? "Binary load from app" : "Qlik app" };
+  if (ext) return { kind: "file", type: `${ext.toUpperCase()} file` };
+  if (/^lib:\/\//i.test(d)) return { kind: "file", type: "Data connection path" };
+  return { kind: "other", type: "Source" };
+}
+
+function renderLineage(e, pane) {
+  const t = e.t, L = t.lineage;
+  const show = v => e.showSecrets ? String(v) : maskSecrets(v);
+  const anySecrets = L.some(x => hasSecrets(x.discriminator) || hasSecrets(x.statement));
+  const intro = `<p class="lin-intro">Qlik writes lineage into the QVD header when the table is stored. Each entry records a data source (<code>Discriminator</code>) and the statement that read it (<code>Statement</code>), such as a SQL query, a LOAD statement or <code>Binary</code>.</p>`;
+  if (!L.length) { pane.innerHTML = intro + `<div class="empty-state">This QVD header has no lineage entries.</div>`; return; }
+
+  const groups = new Map();
+  L.forEach((x, i) => {
+    const key = x.discriminator || "";
+    if (!groups.has(key)) groups.set(key, { disc: key, info: classifySource(x.discriminator, x.statement), entries: [] });
+    groups.get(key).entries.push(i + 1);
+  });
+  const typeCell = info => `<span class="ltype-cell"><span class="lico sm k-${info.kind}">${LIN_ICON[info.kind]}</span>${esc(info.type)}</span>`;
+  const secretNote = anySecrets ? `<div class="notice warn" style="margin-bottom:14px">Credential values (passwords, user IDs, tokens) in this lineage are ${e.showSecrets ? "<strong>shown</strong>, and are included when you copy the table" : "hidden, and stay hidden when you copy the table"}. <button class="btn small" id="toggleSecrets" style="margin-left:8px">${e.showSecrets ? "Hide credentials" : "Show credentials"}</button></div>` : "";
+
+  pane.innerHTML = `
+    ${intro}${secretNote}
+    <div class="lin-tables">
+      <section>
+        <div class="lin-steps-head"><h3>Sources</h3><span class="muted">${groups.size} distinct · entries with the same discriminator are grouped</span></div>
+        <div class="table-scroll"><table class="meta lt">
+          <thead><tr><th>Type</th><th>Discriminator</th><th class="r">Entries</th><th>Entry numbers</th></tr></thead>
+          <tbody>${[...groups.values()].map(g => `<tr>
+            <td>${typeCell(g.info)}</td>
+            <td class="mono wrap">${esc(show(g.disc) || "—")}</td>
+            <td class="n">${g.entries.length}</td>
+            <td class="mono">${g.entries.join(", ")}</td></tr>`).join("")}</tbody>
+        </table></div>
+      </section>
+      <section>
+        <div class="lin-steps-head"><h3>Lineage entries</h3><span class="muted">${fmtInt(L.length)} in header order</span><span class="spacer" style="flex:1"></span><button class="btn small" id="copyLineage">Copy table</button></div>
+        <div class="table-scroll"><table class="meta lt">
+          <thead><tr><th class="r">#</th><th>Type</th><th>Discriminator</th><th>Statement</th></tr></thead>
+          <tbody>${L.map((x, i) => `<tr>
+            <td class="n">${i + 1}</td>
+            <td>${typeCell(classifySource(x.discriminator, x.statement))}</td>
+            <td class="mono wrap disc-col">${esc(show(x.discriminator) || "—")}</td>
+            <td class="mono wrap stmt">${x.statement.trim() ? esc(show(x.statement)) : '<span class="muted">No statement recorded</span>'}</td></tr>`).join("")}</tbody>
+        </table></div>
+      </section>
+    </div>`;
+}
+function lineageTsv(e) {
+  const show = v => e.showSecrets ? String(v || "") : maskSecrets(v);
+  const c = v => show(v).replace(/[\t\r\n]+/g, " ");
+  return ["#\tType\tDiscriminator\tStatement", ...e.t.lineage.map((x, i) => [i + 1, classifySource(x.discriminator, x.statement).type, c(x.discriminator), c(x.statement)].join("\t"))].join("\n");
+}
+
+/* ---------- Data tab ---------- */
+const RN_W = 70, ROW_H = 30, HEAD_H = 34;
+function colWidth(f) {
+  let max = f.name.length * 8 + 34;
+  const n = Math.min(f.noOfSymbols, 300);
+  for (let s = 0; s < n; s++) { const v = display(f, s, false); if (v) max = Math.max(max, v.length * 7.6 + 22); }
+  return Math.round(Math.max(70, Math.min(max, 340)));
+}
+
+function renderData(e, pane) {
+  const t = e.t;
+  if (!e.colW) {
+    e.colW = t.fields.map(colWidth);
+    e.colX = [0]; e.colW.forEach((w, i) => e.colX.push(e.colX[i] + w));   // column start offsets
+  }
+  const total = e.view ? e.view.length : t.noOfRecords;
+  pane.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="toolbar">
+        <div class="search">
+          <select id="searchField" aria-label="Search in field"><option value="-1">All fields</option>${t.fields.map((f, i) => `<option value="${i}" ${e.searchField === i ? "selected" : ""}>${esc(f.name)}</option>`).join("")}</select>
+          <input id="searchBox" type="search" placeholder="Search values (contains, case-insensitive)" value="${esc(e.search)}" autocomplete="off" aria-label="Search values">
+        </div>
+        <label class="check"><input type="checkbox" id="rawToggle" ${e.raw ? "checked" : ""}> Show raw numbers</label>
+        <button class="btn small" id="copyRows">Copy rows</button>
+        <span class="rowcount" id="rowCount" role="status">${e.busy ? esc(e.busy) : rowCountText(e)}</span>
+      </div>
+      <div class="grid-wrap" id="gridWrap">
+        <table class="grid" id="grid" style="width:${RN_W + e.colX[e.colX.length - 1]}px">
+          <colgroup><col style="width:${RN_W}px">${e.colW.map(w => `<col style="width:${w}px">`).join("")}</colgroup>
+          <thead><tr><th class="rn" title="Row number in file">#</th>${t.fields.map((f, i) => `<th data-sort="${i}" title="${esc(f.name)} · click to sort" aria-sort="${e.sort && e.sort.f === i ? (e.sort.dir > 0 ? "ascending" : "descending") : "none"}">${esc(f.name)}${e.sort && e.sort.f === i ? `<span class="arrow" aria-hidden="true">${e.sort.dir > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("")}</tr></thead>
+          <tbody id="gridBody"></tbody>
+        </table>
+        ${total === 0 ? `<div class="empty-grid">${t.noOfRecords === 0 ? "This QVD contains no rows." : "No rows match this search."}</div>` : ""}
+      </div>
+    </div>`;
+  const wrap = $("#gridWrap");
+  wrap.scrollTop = e.scrollTop || 0;
+  wrap.scrollLeft = e.scrollLeft || 0;
+  wrap.addEventListener("scroll", () => { e.scrollTop = wrap.scrollTop; e.scrollLeft = wrap.scrollLeft; scheduleRows(); }, { passive: true });
+  drawRows();
+}
+function rowCountText(e) {
+  const t = e.t;
+  const shown = e.view ? e.view.length : t.noOfRecords;
+  return shown === t.noOfRecords ? `${fmtInt(t.noOfRecords)} rows` : `${fmtInt(shown)} of ${fmtInt(t.noOfRecords)} rows`;
+}
+let rowRaf = 0;
+function scheduleRows() { if (!rowRaf) rowRaf = requestAnimationFrame(() => { rowRaf = 0; drawRows(); }); }
+
+/* Draws only the rows and columns in view, plus a small margin. */
+function drawRows() {
+  const e = state.files[state.active];
+  const body = $("#gridBody"), wrap = $("#gridWrap");
+  if (!e || !e.t || !body || !wrap) return;
+  const t = e.t, nf = t.fields.length, X = e.colX;
+  const total = e.view ? e.view.length : t.noOfRecords;
+  const first = Math.max(0, Math.floor((wrap.scrollTop - HEAD_H) / ROW_H) - 8);
+  const last = Math.min(total, first + Math.ceil(wrap.clientHeight / ROW_H) + 16);
+  // Visible column range (binary search on column offsets), with 2 columns of margin.
+  const left = Math.max(0, wrap.scrollLeft - RN_W), right = wrap.scrollLeft + wrap.clientWidth;
+  let lo = 0, hi = nf;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (X[m + 1] <= left) lo = m + 1; else hi = m; }
+  const c0 = Math.max(0, lo - 2);
+  let c1 = lo; while (c1 < nf && X[c1] < right) c1++;
+  c1 = Math.min(nf, c1 + 2);
+  const gapL = c0 > 0 ? `<td class="gap" colspan="${c0}"></td>` : "";
+  const gapR = c1 < nf ? `<td class="gap" colspan="${nf - c1}"></td>` : "";
+  let html = `<tr class="spacer"><td colspan="${nf + 1}" style="height:${first * ROW_H}px"></td></tr>`;
+  for (let r = first; r < last; r++) {
+    const row = e.view ? e.view[r] : r;
+    html += `<tr><td class="rn">${row + 1}</td>${gapL}`;
+    for (let i = c0; i < c1; i++) {
+      const f = t.fields[i];
+      const s = symIdx(t, row, f);
+      const v = display(f, s, e.raw);
+      if (v === null) html += `<td class="null" title="NULL">null</td>`;
+      else { const ev = esc(v); html += `<td class="${isNumericCell(f, s, e.raw) ? "num" : ""}" title="${ev}">${ev}</td>`; }
+    }
+    html += `${gapR}</tr>`;
+  }
+  html += `<tr class="spacer"><td colspan="${nf + 1}" style="height:${(total - last) * ROW_H}px"></td></tr>`;
+  body.innerHTML = html;
+}
+
+/* Filter + sort, in time slices with progress. A newer request cancels an older one. */
+async function rebuildView(e) {
+  const t = e.t, N = t.noOfRecords;
+  const job = ++e.job;
+  const current = () => e.job === job && state.files.includes(e);
+  const progress = label => frac => { e.busy = `${label} ${Math.round(frac * 100)}%`; if (state.files[state.active] === e) showGridBusy(e.busy); };
+  const q = e.search.trim().toLowerCase();
+  let ids = null;
+  if (q) {
+    e.busy = "Searching…"; showGridBusy(e.busy);
+    const targets = e.searchField >= 0 ? [t.fields[e.searchField]] : t.fields;
+    const live = [];
+    for (const f of targets) {
+      const m = new Uint8Array(f.noOfSymbols); let any = false;
+      const ok = await chunked(f.noOfSymbols, s => {
+        const a = display(f, s, false), b = f.kind[s] !== 4 ? fmtNumber(f.num[s]) : null;
+        if ((a && a.toLowerCase().includes(q)) || (b && b.includes(q))) { m[s] = 1; any = true; }
+      }, null, current);
+      if (!ok) return;
+      if (any) live.push([f, m]);
+    }
+    const out = new Uint32Array(N); let k = 0;
+    if (live.length) {
+      const ok = await chunked(N, r => {
+        for (let j = 0; j < live.length; j++) { const s = symIdx(t, r, live[j][0]); if (s >= 0 && live[j][1][s]) { out[k++] = r; break; } }
+      }, progress("Searching…"), current);
+      if (!ok) return;
+    }
+    ids = out.slice(0, k);
+  }
+  if (e.sort) {
+    // Counting sort on value rank: two linear passes, stable, nulls last in both directions.
+    const f = t.fields[e.sort.f], n = f.noOfSymbols;
+    const rank = symbolRank(f);
+    const M = ids ? ids.length : N;
+    const keys = new Uint32Array(M);
+    let ok = await chunked(M, j => {
+      const s = symIdx(t, ids ? ids[j] : j, f);
+      keys[j] = s < 0 ? n : (e.sort.dir > 0 ? rank[s] : n - 1 - rank[s]);
+    }, progress("Sorting…"), current);
+    if (!ok) return;
+    const start = new Uint32Array(n + 2);
+    for (let j = 0; j < M; j++) start[keys[j] + 1]++;
+    for (let b = 1; b < start.length; b++) start[b] += start[b - 1];
+    const out = new Uint32Array(M);
+    for (let j = 0; j < M; j++) out[start[keys[j]]++] = ids ? ids[j] : j;
+    ids = out;
+  }
+  if (!current()) return;
+  e.view = ids;
+  e.scrollTop = 0;
+  e.busy = null;
+  if (state.files[state.active] === e && e.tab === "data") renderPane();
+}
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+/* Rank of each symbol in value order: numbers first (ascending), then text. */
+function symbolRank(f) {
+  if (f._rank) return f._rank;
+  const n = f.noOfSymbols;
+  const order = Array.from({ length: n }, (_, i) => i);
+  order.sort((a, b) => {
+    const na = f.num[a], nb = f.num[b];
+    const ha = !Number.isNaN(na), hb = !Number.isNaN(nb);
+    if (ha && hb) return na - nb;
+    if (ha) return -1; if (hb) return 1;
+    return collator.compare(symText(f, a) || "", symText(f, b) || "");
+  });
+  const rank = new Uint32Array(n);
+  order.forEach((s, i) => { rank[s] = i; });
+  return (f._rank = rank);
+}
+function showGridBusy(msg) { const rc = $("#rowCount"); if (rc) rc.textContent = msg; }
+
+/* ---------- Fields tab ---------- */
+function typeLines(f) {
+  const [i, fl, tx, d] = f.typeCounts;
+  const parts = [[i, "ti", "Integer"], [fl, "tf", "Float"], [tx, "tt", "Text"], [d, "td", "Dual"]].filter(x => x[0]);
+  if (!parts.length) return `<span class="muted">No values</span>`;
+  return parts.map(([v, c, l]) => `<span class="typeline"><i class="tdot ${c}"></i>${l} <span class="muted">${fmtInt(v)}</span></span>`).join("");
+}
+function renderFields(e, pane) {
+  const t = e.t;
+  const N = t.noOfRecords || 1;
+  pane.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="legend" style="padding:0"><span><i class="ti"></i>Number</span><span><i class="tt"></i>Text</span><span><i class="td"></i>Dual (number + text)</span><span>· Select a field to see its distinct values and how often each occurs.</span></div>
+      <div class="split">
+        <div class="table-scroll">
+          <table class="meta">
+            <thead><tr><th>#</th><th>Field</th><th>Number format</th><th style="text-align:right">Distinct values</th><th style="text-align:right">Nulls</th><th>Value types in symbol table</th><th style="text-align:right">Bit offset</th><th style="text-align:right">Bit width</th><th style="text-align:right">Bias</th><th style="text-align:right">Symbol bytes</th></tr></thead>
+            <tbody>${t.fields.map((f, i) => `
+              <tr class="pick ${e.selField === i ? "on" : ""}" data-field="${i}" tabindex="0" aria-selected="${e.selField === i}">
+                <td class="n">${i + 1}</td>
+                <td><span class="fieldname">${esc(f.name)}</span><br>${f.tags.map(x => `<span class="chip">${esc(x)}</span>`).join("")}</td>
+                <td><span class="chip">${esc(f.nf.type)}</span>${f.nf.fmt ? `<br><span class="mono" style="font-size:12px">${esc(f.nf.fmt)}</span>` : ""}</td>
+                <td class="n">${fmtInt(f.noOfSymbols)}</td>
+                <td class="n">${f.nulls ? `${fmtInt(f.nulls)}<br><span class="muted">${fmtPct(pct(f.nulls, N))}</span>` : "0"}</td>
+                <td>${typeLines(f)}</td>
+                <td class="n">${f.bitOffset}</td><td class="n">${f.bitWidth}</td><td class="n">${f.bias}</td><td class="n">${fmtInt(f.length)}</td>
+              </tr>`).join("")}</tbody>
+          </table>
+        </div>
+        <div id="fieldDetail"></div>
+      </div>
+    </div>`;
+  renderFieldDetail(e);
+}
+function renderFieldDetail(e) {
+  const t = e.t, f = t.fields[e.selField];
+  const box = $("#fieldDetail");
+  if (!f || !box) return;
+  const sortBy = e.valSort || "count";
+  const N = t.noOfRecords;
+  const LIMIT = 500;
+  let top;
+  if (sortBy === "value") {
+    const rank = symbolRank(f), inv = new Uint32Array(f.noOfSymbols);
+    for (let s = 0; s < f.noOfSymbols; s++) inv[rank[s]] = s;
+    top = Array.from(inv.subarray(0, LIMIT));
+  } else {
+    top = Array.from({ length: f.noOfSymbols }, (_, i) => i).sort((a, b) => f.freq[b] - f.freq[a] || a - b).slice(0, LIMIT);
+  }
+  // Show the number column only when some dual value's text differs from its number.
+  let showNum = false;
+  for (let s = 0; s < f.noOfSymbols && !showNum; s++) if (f.kind[s] >= 5 && symText(f, s) !== fmtNumber(f.num[s])) showNum = true;
+  const nf = f.nf;
+  box.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h3>${esc(f.name)}</h3><p>${fmtInt(f.noOfSymbols)} distinct values · ${fmtInt(f.nulls)} nulls</p></div>
+      <div class="panel-body">
+        <dl class="kv">
+          <dt>Number format type</dt><dd>${esc(nf.type)}</dd>
+          <dt>Format pattern</dt><dd>${esc(nf.fmt || "—")}</dd>
+          <dt>Decimals</dt><dd>${esc(nf.nDec || "—")}</dd>
+          <dt>Decimal separator</dt><dd>${esc(nf.dec || "—")}</dd>
+          <dt>Thousands separator</dt><dd>${nf.thou ? esc(nf.thou) + (nf.useThou === "1" ? " (used)" : "") : "—"}</dd>
+          <dt>Symbol table offset</dt><dd>${fmtInt(f.offset)}</dd>
+          <dt>Field comment</dt><dd>${esc(f.comment || "—")}</dd>
+        </dl>
+      </div>
+      <div class="vals-head">
+        <span class="vals-title">Values</span>
+        <span class="seg-toggle" role="group" aria-label="Sort values">
+          <button class="${sortBy === "count" ? "on" : ""}" data-valsort="count" aria-pressed="${sortBy === "count"}">Most frequent</button><button class="${sortBy === "value" ? "on" : ""}" data-valsort="value" aria-pressed="${sortBy === "value"}">By value</button>
+        </span>
+      </div>
+      <div class="vals"><table>
+        <thead><tr><th>Value</th>${showNum ? `<th class="r">Underlying number</th>` : ""}<th class="r">Rows</th><th class="r">% of rows</th></tr></thead>
+        <tbody>
+        ${top.map(s => `<tr><td class="v">${esc(display(f, s, false))}</td>${showNum ? `<td class="c">${f.kind[s] === 4 ? "—" : esc(fmtNumber(f.num[s]))}</td>` : ""}<td class="c">${fmtInt(f.freq[s])}</td><td class="c">${fmtPct(pct(f.freq[s], N))}</td></tr>`).join("")}
+        ${f.nulls ? `<tr><td class="v muted"><em>null</em></td>${showNum ? `<td class="c">—</td>` : ""}<td class="c">${fmtInt(f.nulls)}</td><td class="c">${fmtPct(pct(f.nulls, N))}</td></tr>` : ""}
+      </tbody></table></div>
+      ${f.noOfSymbols > LIMIT ? `<div class="panel-body muted" style="font-size:12.5px">Showing ${LIMIT} of ${fmtInt(f.noOfSymbols)} values.</div>` : ""}
+    </div>`;
+}
+
+/* ---------- Table header tab ---------- */
+function renderHeader(e, pane) {
+  const t = e.t;
+  const skip = new Set(["Fields", "Lineage", "TableTags"]);
+  const rows = Array.from(t.root.children).filter(c => !skip.has(c.tagName)).map(c => {
+    const v = c.children.length ? `<pre class="code" style="padding:0">${esc(new XMLSerializer().serializeToString(c))}</pre>` : esc(c.textContent || "—");
+    return `<tr><th scope="row" class="mono" style="font-weight:500;font-size:12.5px;white-space:nowrap">${esc(c.tagName)}</th><td class="mono" style="font-size:12.5px;overflow-wrap:anywhere">${v}</td></tr>`;
+  });
+  const extra = [
+    ["Binary section start (bytes)", fmtInt(t.symStart)],
+    ["Index table start (bytes)", fmtInt(t.idxStart)],
+    ["Parse time", `${e.parseMs.toFixed(0)} ms`],
+  ];
+  pane.innerHTML = `
+    <div class="split">
+      <div class="table-scroll"><table class="meta"><thead><tr><th>Header element</th><th>Value</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>
+      <div class="panel">
+        <div class="panel-head"><h3>Table tags</h3><p>${t.tableTags.length ? `${t.tableTags.length} tags` : "No table tags"}</p></div>
+        ${t.tableTags.length ? `<div class="panel-body">${t.tableTags.map(x => `<span class="chip">${esc(x)}</span>`).join("")}</div>` : ""}
+        <div class="panel-head" style="border-top:1px solid var(--line)"><h3>File layout</h3><p>Computed by this viewer</p></div>
+        <div class="panel-body"><dl class="kv">${extra.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl></div>
+      </div>
+    </div>`;
+}
+
+/* ---------- XML tab ---------- */
+function highlightXml(x) {
+  return esc(x).replace(/(&lt;\?.*?\?&gt;)/g, '<span class="x-decl">$1</span>').replace(/(&lt;\/?[A-Za-z_][\w.-]*\/?&gt;)/g, '<span class="x-tag">$1</span>');
+}
+const xmlText = e => e.showSecrets ? e.t.headerXml : maskSecrets(e.t.headerXml);
+function renderXml(e, pane) {
+  const masked = !e.showSecrets && hasSecrets(e.t.headerXml);
+  pane.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="toolbar"><span class="muted" style="font-size:12.5px">${fmtInt(e.t.headerXml.length)} characters${masked ? " · credential values hidden" : ""}</span><span class="spacer" style="flex:1"></span>${hasSecrets(e.t.headerXml) ? `<button class="btn small" id="toggleSecrets">${e.showSecrets ? "Hide credentials" : "Show credentials"}</button>` : ""}<button class="btn small" id="copyXml">Copy XML</button></div>
+      <div class="xml-wrap"><pre class="code" id="xmlPre">${highlightXml(xmlText(e))}</pre></div>
+    </div>`;
+}
+
+/* ================================ CLIPBOARD =============================== */
+function copyText(text, okMsg) {
+  const done = () => toast(okMsg);
+  const fallback = () => {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch {}
+    ta.remove();
+    if (ok) done(); else toast("Copy was blocked by the browser. Select the text and copy it manually.");
+  };
+  try { navigator.clipboard.writeText(text).then(done, fallback); } catch { fallback(); }
+}
+function rowsAsTsv(e, limit) {
+  const t = e.t, total = e.view ? e.view.length : t.noOfRecords, n = Math.min(total, limit);
+  const clean = v => v === null ? "" : String(v).replace(/[\t\r\n]+/g, " ");
+  const lines = [t.fields.map(f => clean(f.name)).join("\t")];
+  for (let r = 0; r < n; r++) {
+    const row = e.view ? e.view[r] : r;
+    lines.push(t.fields.map(f => clean(display(f, symIdx(t, row, f), e.raw))).join("\t"));
+  }
+  return [lines.join("\n"), n, total];
+}
+let toastTimer = 0;
+function toast(msg) { const el = $("#toast"); el.textContent = msg; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 3200); }
+
+/* ================================= EVENTS ================================= */
+$("#fileInput").addEventListener("change", ev => { const fl = ev.target.files; if (fl && fl.length) openFiles(fl).then(() => { ev.target.value = ""; }); });
+
+let dragDepth = 0;
+const hasFiles = ev => ev.dataTransfer && Array.from(ev.dataTransfer.types || []).includes("Files");
+const endDrag = () => { dragDepth = 0; $("#dropOverlay").hidden = true; document.body.classList.remove("dragging"); };
+window.addEventListener("dragenter", ev => { if (!hasFiles(ev)) return; ev.preventDefault(); dragDepth++; $("#dropOverlay").hidden = false; document.body.classList.add("dragging"); });
+window.addEventListener("dragover", ev => { if (hasFiles(ev)) ev.preventDefault(); });
+window.addEventListener("dragleave", () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) endDrag(); });
+window.addEventListener("drop", ev => { if (!hasFiles(ev)) return; ev.preventDefault(); endDrag(); openFiles(ev.dataTransfer.files); });
+
+$("#fileList").addEventListener("click", ev => {
+  const c = ev.target.closest("[data-close]");
+  if (c) {
+    const i = +c.dataset.close;
+    state.files.splice(i, 1);
+    if (state.active >= state.files.length) state.active = state.files.length - 1;
+    else if (i < state.active) state.active--;
+    renderAll(); return;
+  }
+  const s = ev.target.closest("[data-i]");
+  if (s) { state.active = +s.dataset.i; renderAll(); }
+});
+
+let searchTimer = 0;
+$("#main").addEventListener("click", ev => {
+  const e = state.files[state.active]; if (!e || !e.t) return;
+  const tab = ev.target.closest("[data-tab]");
+  if (tab) { selectTab(e, tab.dataset.tab, false); return; }
+  const th = ev.target.closest("th[data-sort]");
+  if (th) {
+    const f = +th.dataset.sort;
+    if (!e.sort || e.sort.f !== f) e.sort = { f, dir: 1 };
+    else if (e.sort.dir === 1) e.sort.dir = -1;
+    else e.sort = null;
+    rebuildView(e); return;
+  }
+  const vs = ev.target.closest("[data-valsort]");
+  if (vs) { e.valSort = vs.dataset.valsort; renderFieldDetail(e); return; }
+  const fr = ev.target.closest("tr[data-field]");
+  if (fr) {
+    e.selField = +fr.dataset.field;
+    document.querySelectorAll("tr[data-field]").forEach(r => { const on = +r.dataset.field === e.selField; r.classList.toggle("on", on); r.setAttribute("aria-selected", on); });
+    renderFieldDetail(e); return;
+  }
+  if (ev.target.closest("#toggleSecrets")) { e.showSecrets = !e.showSecrets; renderPane(); return; }
+  if (ev.target.closest("#copyRows")) {
+    const [text, n, total] = rowsAsTsv(e, 100000);
+    copyText(text, n < total ? `Copied the first ${fmtInt(n)} of ${fmtInt(total)} rows as tab-separated text.` : `Copied ${fmtInt(n)} rows as tab-separated text. Paste into Excel.`);
+    return;
+  }
+  if (ev.target.closest("#copyLineage")) { copyText(lineageTsv(e), "Copied the lineage table. Paste into Excel."); return; }
+  if (ev.target.closest("#copyXml")) { copyText(xmlText(e), "Copied the header XML."); return; }
+});
+$("#main").addEventListener("keydown", ev => {
+  const e = state.files[state.active];
+  const tab = ev.target.closest && ev.target.closest('[role="tab"]');
+  if (tab && e) {
+    const ids = [...document.querySelectorAll('[role="tab"]')].map(b => b.dataset.tab);
+    let i = ids.indexOf(tab.dataset.tab);
+    if (ev.key === "ArrowRight") i = (i + 1) % ids.length;
+    else if (ev.key === "ArrowLeft") i = (i - 1 + ids.length) % ids.length;
+    else if (ev.key === "Home") i = 0;
+    else if (ev.key === "End") i = ids.length - 1;
+    else return;
+    ev.preventDefault(); selectTab(e, ids[i], true); return;
+  }
+  const fr = ev.target.closest && ev.target.closest("tr[data-field]");
+  if (fr && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); fr.click(); }
+});
+$("#main").addEventListener("input", ev => {
+  const e = state.files[state.active]; if (!e) return;
+  if (ev.target.id === "searchBox") {
+    e.search = ev.target.value;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => rebuildView(e), 250);
+  }
+});
+$("#main").addEventListener("change", ev => {
+  const e = state.files[state.active]; if (!e) return;
+  if (ev.target.id === "rawToggle") { e.raw = ev.target.checked; drawRows(); }
+  if (ev.target.id === "searchField") { e.searchField = +ev.target.value; if (e.search.trim()) rebuildView(e); }
+});
+
+renderAll();
+</script>
+
+</body>
+</html>
